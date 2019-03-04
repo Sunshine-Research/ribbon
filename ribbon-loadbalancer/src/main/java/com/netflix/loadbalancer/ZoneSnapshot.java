@@ -18,7 +18,7 @@
 package com.netflix.loadbalancer;
 
 /**
- * Captures the metrics on a Per Zone basis (Zone is modeled after the Amazon Availability Zone)
+ * 以每个分区为基础进行计数，在Amazon可用分区后建模
  * @author awang
  *
  */

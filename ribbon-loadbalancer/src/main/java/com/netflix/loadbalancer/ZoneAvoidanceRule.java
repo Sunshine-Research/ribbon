@@ -26,10 +26,9 @@ import java.util.Set;
 import com.netflix.client.config.IClientConfig;
 
 /**
- * A rule that uses the a {@link CompositePredicate} to filter servers based on zone and availability. The primary predicate is composed of
- * a {@link ZoneAvoidancePredicate} and {@link AvailabilityPredicate}, with the fallbacks to {@link AvailabilityPredicate}
- * and an "always true" predicate returned from {@link AbstractServerPredicate#alwaysTrue()} 
- * 
+ * 使用CompositePredicate的方式来过滤基于分区和可用性的服务集群的规则
+ * 这种断言是一个钟ZoneAvoidancePredicate和AvailabilityPredicate的集合
+ * Fallback是AvailabilityPredicate
  * @author awang
  *
  */

@@ -34,18 +34,17 @@ import com.netflix.config.DynamicDoubleProperty;
 import com.netflix.config.DynamicPropertyFactory;
 
 /**
- * Load balancer that can avoid a zone as a whole when choosing server. 
- *<p>
+ * 一个可以避免在选在服务器时，将一个分区全部选定的负载均衡器，它是一个动态服务负载均衡器
  * The key metric used to measure the zone condition is Average Active Requests,
 which is aggregated per rest client per zone. It is the
 total outstanding requests in a zone divided by number of available targeted instances (excluding circuit breaker tripped instances).
 This metric is very effective when timeout occurs slowly on a bad zone.
 <p>
-The  LoadBalancer will calculate and examine zone stats of all available zones. If the Average Active Requests for any zone has reached a configured threshold, this zone will be dropped from the active server list. In case more than one zone has reached the threshold, the zone with the most active requests per server will be dropped.
-Once the the worst zone is dropped, a zone will be chosen among the rest with the probability proportional to its number of instances.
-A server will be returned from the chosen zone with a given Rule (A Rule is a load balancing strategy, for example {@link AvailabilityFilteringRule})
-For each request, the steps above will be repeated. That is to say, each zone related load balancing decisions are made at real time with the up-to-date statistics aiding the choice.
-
+ 负载均衡器或计算和检查所有可用分区的分区状态，如果所有的平均可使用请求数均已达到一个配置的阈值，分区将会从服务集群中摘除掉
+ 同样，如果多个分区如果超过设定的阈值，也会被舍弃掉
+ 如果一个最糟糕的分区被舍弃，那么空闲的分区会立即补上，当然会以成比例的方式来提供服务器
+ 一个服务器，将会通过分区筛选，规则筛选，从而脱颖而出
+ 对于每个请求，上述的步骤都会重复执行，也就是说，每个分区都会与实时的负载均衡器进行关联，进行实时的数据，并且达到最终的目标
  * @author awang
  *
  * @param <T>

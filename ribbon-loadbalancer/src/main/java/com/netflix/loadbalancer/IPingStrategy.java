@@ -1,12 +1,10 @@
 package com.netflix.loadbalancer;
 
 /**
- * Defines the strategy, used to ping all servers, registered in
- * <c>com.netflix.loadbalancer.BaseLoadBalancer</c>. You would
- * typically create custom implementation of this interface, if you
- * want your servers to be pinged in parallel. <b>Please note,
- * that implementations of this interface should be immutable.</b>
- *
+ * 是ping所有服务器的ping策略
+ * 将注册在BaseLoadBalancer中
+ * 你可以实现自己的策略，比如并发ping
+ * 但是要注意的是，ping策略最好不要重复
  * @author Dmitry_Cherkas
  * @see Server
  * @see IPing

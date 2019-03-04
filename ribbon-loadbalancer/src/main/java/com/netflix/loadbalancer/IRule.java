@@ -18,25 +18,30 @@
 package com.netflix.loadbalancer;
 
 /**
- * Interface that defines a "Rule" for a LoadBalancer. A Rule can be thought of
- * as a Strategy for loadbalacing. Well known loadbalancing strategies include
- * Round Robin, Response Time based etc.
- * 
+ * 为负载均衡声明一个规则接口
+ * 规则，可以是一种策略
+ * 比如众所周知的轮询，基于响应时间等
+ *
  * @author stonse
  * 
  */
 public interface IRule{
-    /*
-     * choose one alive server from lb.allServers or
-     * lb.upServers according to key
-     * 
-     * @return choosen Server object. NULL is returned if none
-     *  server is available 
-     */
-
+	/**
+	 * 从所有服务器中选择一个存货的服务器
+	 * @param key
+	 * @return
+	 */
     public Server choose(Object key);
-    
+
+	/**
+	 * 设置负载均衡
+ 	 * @param lb
+	 */
     public void setLoadBalancer(ILoadBalancer lb);
-    
-    public ILoadBalancer getLoadBalancer();    
+
+	/**
+	 * 获取负载均衡
+	 * @return
+	 */
+	public ILoadBalancer getLoadBalancer();
 }

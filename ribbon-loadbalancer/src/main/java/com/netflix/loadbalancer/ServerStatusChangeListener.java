@@ -20,8 +20,7 @@ import java.util.Collection;
 public interface ServerStatusChangeListener {
 
     /**
-     * Invoked by {@link BaseLoadBalancer} when server status has changed (e.g. when marked as down or found dead by ping).
-     *
+	 * 当服务器状态发生变化时（可以是被标记为已宕机，或者是ping策略发现服务器已经处于dead状态），BaseLoadBalancer会调用这个方法
      * @param servers the servers that had their status changed, never {@code null}
      */
     public void serverStatusChanged(Collection<Server> servers);

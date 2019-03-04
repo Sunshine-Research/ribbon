@@ -21,7 +21,7 @@ import java.util.List;
 
 public interface ServerListChangeListener {
     /**
-     * Invoked by {@link BaseLoadBalancer} when server list is changed  
+	 * 当服务集群发生变化时，BaseLoadBalancer会调用该方法
      */
     public void serverListChanged(List<Server> oldList, List<Server> newList);
 }

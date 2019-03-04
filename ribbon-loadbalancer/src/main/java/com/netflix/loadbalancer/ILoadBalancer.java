@@ -20,13 +20,9 @@ package com.netflix.loadbalancer;
 import java.util.List;
 
 /**
- * Interface that defines the operations for a software loadbalancer. A typical
- * loadbalancer minimally need a set of servers to loadbalance for, a method to
- * mark a particular server to be out of rotation and a call that will choose a
- * server from the existing list of server.
- * 
+ * 软件技术上的负载均衡器的接口
+ * 一个典型的负载均衡器，需要进行负载均衡的服务器集群，一个可以从轮换中选择出一个典型的服务器，和一个可以从服务器集群中选择出一个服务器的调用
  * @author stonse
- * 
  */
 public interface ILoadBalancer {
 
@@ -35,15 +31,15 @@ public interface ILoadBalancer {
 	 * This API also serves to add additional ones at a later time
 	 * The same logical server (host:port) could essentially be added multiple times
 	 * (helpful in cases where you want to give more "weightage" perhaps ..)
-	 * 
+	 *
 	 * @param newServers new servers to add
 	 */
 	public void addServers(List<Server> newServers);
-	
+
 	/**
 	 * Choose a server from load balancer.
-	 * 
-	 * @param key An object that the load balancer may use to determine which server to return. null if 
+	 *
+	 * @param key An object that the load balancer may use to determine which server to return. null if
 	 *         the load balancer does not use this parameter.
 	 * @return server chosen
 	 */

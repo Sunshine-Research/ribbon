@@ -23,9 +23,7 @@ import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.Monitors;
 
 /**
- * Class that stores Statistics per Zone (where Zone is typically a Amazon
- * Availability Zone)
- * 
+ * 用于存储分区的数据，尤其分区是典型的亚马逊可用云分区
  * @author awang
  * 
  * @param <T>

@@ -9,6 +9,11 @@ import com.netflix.client.config.IClientConfigKey;
 
 import java.util.List;
 
+/**
+ * 建造者模式
+ * 根据Server建造一个负载均衡器
+ * @param <T>
+ */
 public class LoadBalancerBuilder<T extends Server> {
     
     private IClientConfig config = ClientConfigFactory.findDefaultConfigFactory().newConfig();
@@ -152,8 +157,8 @@ public class LoadBalancerBuilder<T extends Server> {
     }
 
     /**
-     * Build a load balancer using the configuration from the {@link IClientConfig} only. It uses reflection to initialize necessary load balancer
-     * components. 
+	 * 只根据IClientConfig的配置构建一个负载均衡器
+	 * 它使用的是反射的方式来实现负载均衡的必须组件
      */
     public ILoadBalancer buildLoadBalancerFromConfigWithReflection() {
         String loadBalancerClassName = config.get(CommonClientConfigKey.NFLoadBalancerClassName);

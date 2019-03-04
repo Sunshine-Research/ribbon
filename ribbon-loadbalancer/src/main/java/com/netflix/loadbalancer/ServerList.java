@@ -20,19 +20,22 @@ package com.netflix.loadbalancer;
 import java.util.List;
 
 /**
- * Interface that defines the methods sed to obtain the List of Servers
+ * 定义用户获取服务器列表的接口
  * @author stonse
  *
  * @param <T>
  */
 public interface ServerList<T extends Server> {
 
+	/**
+	 * 获取所有已经初始化的服务器
+	 * @return
+	 */
     public List<T> getInitialListOfServers();
     
     /**
-     * Return updated list of servers. This is called say every 30 secs
-     * (configurable) by the Loadbalancer's Ping cycle
-     * 
+	 * 返回已更新的服务器列表
+	 * 这个方法会被负载均衡器的ping循环策略以1/30s的频次调用
      */
     public List<T> getUpdatedListOfServers();   
 
