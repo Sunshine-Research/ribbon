@@ -37,13 +37,9 @@ import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.Monitors;
 
 /**
- * This server list filter deals with filtering out servers based on the Zone affinity. 
- * This filtering will be turned on if either {@link CommonClientConfigKey#EnableZoneAffinity} 
- * or {@link CommonClientConfigKey#EnableZoneExclusivity} is set to true in {@link IClientConfig} object
- * passed into this class during initialization. When turned on, servers outside the same zone (as 
- * indicated by {@link Server#getZone()}) will be filtered out. By default, zone affinity 
- * and exclusivity are turned off and nothing is filtered out.
- * 
+ * 基于分区概念的服务过滤器
+ * 需要打开EnableZoneAffinity和EnableZoneExclusivity开关
+ * 意为同分区、同中心分配服务器
  * @author stonse
  *
  */
@@ -126,13 +122,14 @@ public class ZoneAffinityServerListFilter<T extends Server> extends
     @Override
     public List<T> getFilteredListOfServers(List<T> servers) {
         if (zone != null && (zoneAffinity || zoneExclusive) && servers !=null && servers.size() > 0){
+        	// ① 过滤同中心服务器
             List<T> filteredServers = Lists.newArrayList(Iterables.filter(
                     servers, this.zoneAffinityPredicate.getServerOnlyPredicate()));
             if (shouldEnableZoneAffinity(filteredServers)) {
                 return filteredServers;
             } else if (zoneAffinity) {
                 overrideCounter.increment();
-            }
+		}
         }
         return servers;
     }

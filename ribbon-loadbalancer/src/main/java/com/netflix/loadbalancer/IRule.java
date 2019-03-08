@@ -27,7 +27,7 @@ package com.netflix.loadbalancer;
  */
 public interface IRule{
 	/**
-	 * 从所有服务器中选择一个存货的服务器
+	 * 从所有服务器中选择一个服务器
 	 * @param key
 	 * @return
 	 */

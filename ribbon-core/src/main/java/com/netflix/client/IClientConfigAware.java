@@ -20,10 +20,9 @@ package com.netflix.client;
 import com.netflix.client.config.IClientConfig;
 
 /**
- * There are multiple classes (and components) that need access to the configuration.
- * Its easier to do this by using {@link IClientConfig} as the object that carries these configurations
- * and to define a common interface that components that need this can implement and hence be aware of.
- *
+ * 多个类或者组件都需要访问配置
+ * 如果我们使用IClientConfig来作为存储配置的对象，所有事情都会变得简单
+ * 所以我们有了这个接口，供实现
  * @author stonse
  * @author awang 
  *
@@ -34,9 +33,7 @@ public interface IClientConfigAware {
     }
 
     /**
-     * Concrete implementation should implement this method so that the configuration set via 
-     * {@link IClientConfig} (which in turn were set via Archaius properties) will be taken into consideration
-     *
+	 * 实现Niws的配置
      * @param clientConfig
      */
     default void initWithNiwsConfig(IClientConfig clientConfig) {

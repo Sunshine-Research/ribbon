@@ -41,20 +41,27 @@ public class BestAvailableRule extends ClientConfigEnabledRoundRobinRule {
         if (loadBalancerStats == null) {
             return super.choose(key);
         }
+        // 从负载均衡器中获取所有的服务实例
         List<Server> serverList = getLoadBalancer().getAllServers();
+        // 最小并发连接数是Integer的上限
         int minimalConcurrentConnections = Integer.MAX_VALUE;
         long currentTime = System.currentTimeMillis();
         Server chosen = null;
+        // 遍历该负载均衡器上所有的服务实例
         for (Server server: serverList) {
+        	// 从负载均衡器状态中获取当前服务器的状态
             ServerStats serverStats = loadBalancerStats.getSingleServerStat(server);
+            // 判断服务势力是否处于不可用状态
             if (!serverStats.isCircuitBreakerTripped(currentTime)) {
                 int concurrentConnections = serverStats.getActiveRequestsCount(currentTime);
+                // 取一个拥有最小连接数的服务实例，下一次以此连接数为标准
                 if (concurrentConnections < minimalConcurrentConnections) {
                     minimalConcurrentConnections = concurrentConnections;
                     chosen = server;
                 }
             }
         }
+        // 如果没有选到机器，就使用Round Robin负载均衡规则选择服务实例
         if (chosen == null) {
             return super.choose(key);
         } else {

@@ -21,16 +21,15 @@ import com.netflix.client.config.IClientConfig;
 
 
 /**
- * A client that can execute a single request. 
- * 
+ * 可以执行简单请求的客户端
  * @author awang
  *
  */
 public interface IClient<S extends ClientRequest, T extends IResponse> {
 
 	/**
-	 * Execute the request and return the response. It is expected that there is no retry and all exceptions
-     * are thrown directly.
+	 * 执行请求，并返回响应
+	 * 没有重试，所有异常会直接抛出去
 	 */
     public T execute(S request, IClientConfig requestConfig) throws Exception; 
 }

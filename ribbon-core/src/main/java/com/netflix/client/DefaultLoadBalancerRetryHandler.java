@@ -27,10 +27,7 @@ import java.net.SocketTimeoutException;
 import java.util.List;
 
 /**
- * A default {@link RetryHandler}. The implementation is limited to
- * known exceptions in java.net. Specific client implementation should provide its own
- * {@link RetryHandler}
- * 
+ * 一个默认的重试处理，所有的实现需要基于限制在java.net异常中，如果需要指定客户端实现，需要自己提供RetryHandler
  * @author awang
  */
 public class DefaultLoadBalancerRetryHandler implements RetryHandler {

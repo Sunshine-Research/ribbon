@@ -22,9 +22,7 @@ import java.net.URI;
 import com.netflix.client.config.IClientConfig;
 
 /**
- * An object that represents a common client request that is suitable for all communication protocol. 
- * It is expected that this object is immutable.
- * 
+ * 适合所有协议的客户端请求对象，最好是不可以变的
  * @author awang
  *
  */
@@ -39,8 +37,8 @@ public class ClientRequest implements Cloneable {
     }
     
     public ClientRequest(URI uri) {
-        this.uri = uri;
-    }
+		this.uri = uri;
+	}
 
     /**
      * Constructor to set all fields. 
@@ -125,7 +123,7 @@ public class ClientRequest implements Cloneable {
      * Create a client request using a new URI. This is used by {@code com.netflix.client.AbstractLoadBalancerAwareClient#computeFinalUriWithLoadBalancer(ClientRequest)}.
      * It first tries to clone the request and if that fails it will use the copy constructor {@link #ClientRequest(ClientRequest)}.
      * Sub classes are recommended to override this method to provide more efficient implementation.
-     * 
+     *
      * @param newURI
      */
     public ClientRequest replaceUri(URI newURI) {

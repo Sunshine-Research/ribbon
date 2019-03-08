@@ -20,9 +20,7 @@ package com.netflix.client.config;
 import java.util.Map;
 
 /**
- * Defines the client configuration used by various APIs to initialize clients or load balancers
- * and for method execution.
- * 
+ * API使用的客户端的配置，用于实例化客户端或者负载均衡器
  * @author awang
  */
 
@@ -35,13 +33,13 @@ public interface IClientConfig {
 	void setNameSpace(String nameSpace);
 
 	/**
-	 * Load the properties for a given client and/or load balancer. 
+	 * 加载指定客户端或负载均衡器的配置文件
 	 * @param clientName
 	 */
 	void loadProperties(String clientName);
 	
 	/**
-	 * load default values for this configuration
+	 * 为配置加载默认值
 	 */
 	void loadDefaultValues();
 
@@ -69,6 +67,7 @@ public interface IClientConfig {
 	
 	/**
 	 * Returns the applicable virtual addresses ("vip") used by this client configuration.
+	 * 返回客户端配置可用的VIP地址
 	 */
 	String resolveDeploymentContextbasedVipAddresses();
 	
@@ -79,7 +78,7 @@ public interface IClientConfig {
     boolean getPropertyAsBoolean(IClientConfigKey key, boolean defaultValue);
     
     /**
-     * Returns a typed property. If the property of IClientConfigKey is not set, it returns null.
+	 * 返回泛型化的配置属性
      * <p>
      * <ul>
      * <li>Integer</li>
@@ -93,8 +92,7 @@ public interface IClientConfig {
     <T> T get(IClientConfigKey<T> key);
 
     /**
-     * Returns a typed property. If the property of IClientConfigKey is not set, it returns the default value, which
-     * could be null.
+     * 返回有默认值的泛型化配置属性
      * <p>
      * <ul>
      * <li>Integer</li>
@@ -110,13 +108,12 @@ public interface IClientConfig {
     }
 
     /**
-     * Returns a typed property. If the property of IClientConfigKey is not set, 
-     * it returns the default value passed in as the parameter.
+	 * 返回有指定默认值的泛型化配置属性
      */
     <T> T get(IClientConfigKey<T> key, T defaultValue);
 
     /**
-     * Set the typed property with the given value. 
+	 * 设置配置属性值
      */
     <T> IClientConfig set(IClientConfigKey<T> key, T value);
     
@@ -128,7 +125,7 @@ public interface IClientConfig {
         }
         
         /**
-         * Create a builder with no initial property and value for the configuration to be built.
+         * 建造者模式
          */
         public static Builder newBuilder() {
             Builder builder = new Builder();
@@ -137,9 +134,8 @@ public interface IClientConfig {
         }
         
         /**
-         * Create a builder with properties for the specific client loaded. The default 
-         * {@link IClientConfig} implementation loads properties from <a href="https://github.com/Netflix/archaius">Archaius</a>
-         * 
+		 * Archaius是Netflix开源的属性管理
+         * ${clientName}.ribbon是默认的前缀名称
          * @param clientName Name of client. clientName.ribbon will be used as a prefix to find corresponding properties from
          *      <a href="https://github.com/Netflix/archaius">Archaius</a>
          */
@@ -151,9 +147,7 @@ public interface IClientConfig {
         }
         
         /**
-         * Create a builder with properties for the specific client loaded. The default 
-         * {@link IClientConfig} implementation loads properties from <a href="https://github.com/Netflix/archaius">Archaius</a>
-         * 
+		 * ${clientName}.propertyNameSpace
          * @param clientName Name of client. clientName.propertyNameSpace will be used as a prefix to find corresponding properties from
          *      <a href="https://github.com/Netflix/archaius">Archaius</a>
          */
@@ -168,7 +162,7 @@ public interface IClientConfig {
         
         /**
          * Create a builder with properties for the specific client loaded.
-         * 
+         * 加载指定客户端属性
          *  @param implClass the class of {@link IClientConfig} object to be built
          */
         public static Builder newBuilder(Class<? extends IClientConfig> implClass, String clientName) {

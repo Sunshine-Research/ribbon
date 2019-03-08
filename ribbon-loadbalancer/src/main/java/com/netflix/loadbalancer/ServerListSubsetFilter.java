@@ -30,14 +30,8 @@ import com.netflix.config.DynamicFloatProperty;
 import com.netflix.config.DynamicIntProperty;
 
 /**
- * A server list filter that limits the number of the servers used by the load balancer to be the subset of all servers.
- * This is useful if the server farm is large (e.g., in the hundreds) and making use of every one of them
- * and keeping the connections in http client's connection pool is unnecessary. It also has the capability of eviction 
- * of relatively unhealthy servers by comparing the total network failures and concurrent connections. 
- *  
- * @author awang
- *
- * @param <T>
+ * 负载均衡的集群是整个集群的子集，在集群规模很大的时非常有用，可以最大化利用http连接池，避免所有的连接都在一个池子中
+ * 它还可以通过网络故障和并发连接数来判断和摘除不健康的服务器
  */
 public class ServerListSubsetFilter<T extends Server> extends ZoneAffinityServerListFilter<T> implements IClientConfigAware, Comparator<T>{
 
@@ -85,51 +79,58 @@ public class ServerListSubsetFilter<T extends Server> extends ZoneAffinityServer
      */
     @Override
     public List<T> getFilteredListOfServers(List<T> servers) {
+    	// 先去获取同分区下的服务器列表
         List<T> zoneAffinityFiltered = super.getFilteredListOfServers(servers);
+        // 进行一次去重
         Set<T> candidates = Sets.newHashSet(zoneAffinityFiltered);
+        // 当前服务器子集
         Set<T> newSubSet = Sets.newHashSet(currentSubset);
+        // 获取负载均衡器状态
         LoadBalancerStats lbStats = getLoadBalancerStats();
         for (T server: currentSubset) {
-            // this server is either down or out of service
+        	// 遍历所有的集群，删除没有从分区中查出来的集群
             if (!candidates.contains(server)) {
                 newSubSet.remove(server);
             } else {
+            	// 从负载均衡器状态中获取当前服务器的状态
                 ServerStats stats = lbStats.getSingleServerStat(server);
-                // remove the servers that do not meet health criteria
+				// 去除不满足服务状态的服务集群
                 if (stats.getActiveRequestsCount() > eliminationConnectionCountThreshold.get()
                         || stats.getFailureCount() > eliminationFailureCountThreshold.get()) {
                     newSubSet.remove(server);
-                    // also remove from the general pool to avoid selecting them again
+                    // 分区列表同时也删除对应的服务器
                     candidates.remove(server);
                 }
             }
         }
+        // 子集群的大小
         int targetedListSize = sizeProp.get();
+        // 看看摘除掉了多少个集群
         int numEliminated = currentSubset.size() - newSubSet.size();
+        // 算一个最小摘除数
         int minElimination = (int) (targetedListSize * eliminationPercent.get());
+        // 计算需要摘除的服务器数量
         int numToForceEliminate = 0;
         if (targetedListSize < newSubSet.size()) {
-            // size is shrinking
             numToForceEliminate = newSubSet.size() - targetedListSize;
-        } else if (minElimination > numEliminated) {
-            numToForceEliminate = minElimination - numEliminated; 
-        }
-        
-        if (numToForceEliminate > newSubSet.size()) {
+		} else if (minElimination > numEliminated) {
+			numToForceEliminate = minElimination - numEliminated;
+		}
+
+		if (numToForceEliminate > newSubSet.size()) {
             numToForceEliminate = newSubSet.size();
         }
 
+		// 如果需要摘除，排序后，从小到大进行摘除
         if (numToForceEliminate > 0) {
-            List<T> sortedSubSet = Lists.newArrayList(newSubSet);           
+            List<T> sortedSubSet = Lists.newArrayList(newSubSet);
             Collections.sort(sortedSubSet, this);
-            List<T> forceEliminated = sortedSubSet.subList(0, numToForceEliminate);
-            newSubSet.removeAll(forceEliminated);
-            candidates.removeAll(forceEliminated);
+			List<T> forceEliminated = sortedSubSet.subList(0, numToForceEliminate);
+			newSubSet.removeAll(forceEliminated);
+			candidates.removeAll(forceEliminated);
         }
         
-        // after forced elimination or elimination of unhealthy instances,
-        // the size of the set may be less than the targeted size,
-        // then we just randomly add servers from the big pool
+		// 我们摘除后，需要进行一次服务器补充，是从当前分区集群中随机选择机器进行补充
         if (newSubSet.size() < targetedListSize) {
             int numToChoose = targetedListSize - newSubSet.size();
             candidates.removeAll(newSubSet);
@@ -144,6 +145,7 @@ public class ServerListSubsetFilter<T extends Server> extends ZoneAffinityServer
                 newSubSet.add(server);
             }
         }
+        // 重置当前子集群
         currentSubset = newSubSet;       
         return Lists.newArrayList(newSubSet);            
     }

@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * The most well known and basic load balancing strategy, i.e. Round Robin Rule.
+ * 广为熟知的Round Robin负载均衡策略
  *
  * @author stonse
  * @author Nikos Michalakis <nikos@netflix.com>
@@ -49,6 +49,7 @@ public class RoundRobinRule extends AbstractLoadBalancerRule {
     }
 
     public Server choose(ILoadBalancer lb, Object key) {
+    	// 校验负载均衡器
         if (lb == null) {
             log.warn("no load balancer");
             return null;
@@ -57,6 +58,7 @@ public class RoundRobinRule extends AbstractLoadBalancerRule {
         Server server = null;
         int count = 0;
         while (server == null && count++ < 10) {
+        	// 获取可用服务器和所有服务器，并进行校验
             List<Server> reachableServers = lb.getReachableServers();
             List<Server> allServers = lb.getAllServers();
             int upCount = reachableServers.size();
@@ -71,7 +73,6 @@ public class RoundRobinRule extends AbstractLoadBalancerRule {
             server = allServers.get(nextServerIndex);
 
             if (server == null) {
-                /* Transient. */
                 Thread.yield();
                 continue;
             }
@@ -79,11 +80,9 @@ public class RoundRobinRule extends AbstractLoadBalancerRule {
             if (server.isAlive() && (server.isReadyToServe())) {
                 return (server);
             }
-
-            // Next.
             server = null;
         }
-
+		// 10次都没有从负载均衡器中找到可用的存活集群
         if (count >= 10) {
             log.warn("No available alive servers after 10 tries from load balancer: "
                     + lb);

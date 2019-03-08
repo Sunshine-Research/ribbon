@@ -48,11 +48,9 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * A basic implementation of the load balancer where an arbitrary list of
- * servers can be set as the server pool. A ping can be set to determine the
- * liveness of a server. Internally, this class maintains an "all" server list
- * and an "up" server list and use them depending on what the caller asks for.
- * 
+ * 一个负载均衡器的基础实现，可以容纳任意一组服务器集群
+ * 用ping的方式来检查一个服务器是否存活
+ * 同时维护了所有集群和可服务集群，用于满足请求的不同调用需求
  * @author stonse
  * 
  */

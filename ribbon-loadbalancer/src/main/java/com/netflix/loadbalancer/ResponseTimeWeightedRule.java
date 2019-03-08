@@ -1,20 +1,20 @@
 /*
-*
-* Copyright 2013 Netflix, Inc.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*
-*/
+ *
+ * Copyright 2013 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package com.netflix.loadbalancer;
 
 import java.util.ArrayList;
@@ -30,15 +30,15 @@ import org.slf4j.LoggerFactory;
 import com.netflix.client.config.IClientConfig;
 import com.netflix.client.config.IClientConfigKey;
 
-/** 
+/**
  * Rule that use the average/percentile response times
- * to assign dynamic "weights" per Server which is then used in 
- * the "Weighted Round Robin" fashion. 
+ * to assign dynamic "weights" per Server which is then used in
+ * the "Weighted Round Robin" fashion.
  * <p>
  * The basic idea for weighted round robin has been obtained from JCS
  * The implementation for choosing the endpoint from the list of endpoints
- * is as follows:Let's assume 4 endpoints:A(wt=10), B(wt=30), C(wt=40), 
- * D(wt=20). 
+ * is as follows:Let's assume 4 endpoints:A(wt=10), B(wt=30), C(wt=40),
+ * D(wt=20).
  * <p>
  * Using the Random API, generate a random number between 1 and10+30+40+20.
  * Let's assume that the above list is randomized. Based on the weights, we
@@ -63,212 +63,210 @@ import com.netflix.client.config.IClientConfigKey;
  * else if (random_number between 81 &amp; 100) {send request to D;}
  * <p>
  * When there is not enough statistics gathered for the servers, this rule
- * will fall back to use {@link RoundRobinRule}. 
+ * will fall back to use {@link RoundRobinRule}.
  * @author stonse
- * 
- * @deprecated Use {@link WeightedResponseTimeRule}
- * 
  * @see WeightedResponseTimeRule
- * 
+ * @deprecated Use {@link WeightedResponseTimeRule}
  */
 public class ResponseTimeWeightedRule extends RoundRobinRule {
 
-    public static final IClientConfigKey<Integer> WEIGHT_TASK_TIMER_INTERVAL_CONFIG_KEY = WeightedResponseTimeRule.WEIGHT_TASK_TIMER_INTERVAL_CONFIG_KEY;
-    
-    public static final int DEFAULT_TIMER_INTERVAL = 30 * 1000;
-    
-    private int serverWeightTaskTimerInterval = DEFAULT_TIMER_INTERVAL;
+	public static final IClientConfigKey<Integer> WEIGHT_TASK_TIMER_INTERVAL_CONFIG_KEY = WeightedResponseTimeRule.WEIGHT_TASK_TIMER_INTERVAL_CONFIG_KEY;
 
-    private static final Logger logger = LoggerFactory.getLogger(ResponseTimeWeightedRule.class);
-    
-    // holds the accumulated weight from index 0 to current index
-    // for example, element at index 2 holds the sum of weight of servers from 0 to 2
-    private volatile List<Double> accumulatedWeights = new ArrayList<Double>();
-    
+	public static final int DEFAULT_TIMER_INTERVAL = 30 * 1000;
 
-    private final Random random = new Random();
+	private int serverWeightTaskTimerInterval = DEFAULT_TIMER_INTERVAL;
 
-    protected Timer serverWeightTimer = null;
+	private static final Logger logger = LoggerFactory.getLogger(ResponseTimeWeightedRule.class);
 
-    protected AtomicBoolean serverWeightAssignmentInProgress = new AtomicBoolean(false);
+	// 存储了计算好的权重，比如索引2的位置存储的值是从0到2所有服务节点的权重之和
+	private volatile List<Double> accumulatedWeights = new ArrayList<Double>();
 
-    String name = "unknown";
 
-    public ResponseTimeWeightedRule() {
-        super();
-    }
+	private final Random random = new Random();
 
-    public ResponseTimeWeightedRule(ILoadBalancer lb) {
-        super(lb);
-    }
-    
-    @Override
-    public void setLoadBalancer(ILoadBalancer lb) {
-        super.setLoadBalancer(lb);
-        if (lb instanceof BaseLoadBalancer) {
-            name = ((BaseLoadBalancer) lb).getName();
-        }
-        initialize(lb);
-    }
+	protected Timer serverWeightTimer = null;
 
-    void initialize(ILoadBalancer lb) {        
-        if (serverWeightTimer != null) {
-            serverWeightTimer.cancel();
-        }
-        serverWeightTimer = new Timer("NFLoadBalancer-serverWeightTimer-"
-                + name, true);
-        serverWeightTimer.schedule(new DynamicServerWeightTask(), 0,
-                serverWeightTaskTimerInterval);
-        // do a initial run
-        ServerWeight sw = new ServerWeight();
-        sw.maintainWeights();
+	protected AtomicBoolean serverWeightAssignmentInProgress = new AtomicBoolean(false);
 
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-            public void run() {
-                logger.info("Stopping NFLoadBalancer-serverWeightTimer-{}", name);
-                serverWeightTimer.cancel();
-            }
-        }));
-    }
+	String name = "unknown";
 
-    public void shutdown() {
-        if (serverWeightTimer != null) {
-            logger.info("Stopping NFLoadBalancer-serverWeightTimer-{}", name);
-            serverWeightTimer.cancel();
-        }
-    }
+	public ResponseTimeWeightedRule() {
+		super();
+	}
 
-    @edu.umd.cs.findbugs.annotations.SuppressWarnings(value = "RCN_REDUNDANT_NULLCHECK_OF_NULL_VALUE")
-    @Override
-    public Server choose(ILoadBalancer lb, Object key) {
-        if (lb == null) {
-            return null;
-        }
-        Server server = null;
+	public ResponseTimeWeightedRule(ILoadBalancer lb) {
+		super(lb);
+	}
 
-        while (server == null) {
-            // get hold of the current reference in case it is changed from the other thread
-            List<Double> currentWeights = accumulatedWeights;
-            if (Thread.interrupted()) {
-                return null;
-            }
-            List<Server> allList = lb.getAllServers();
+	@Override
+	public void setLoadBalancer(ILoadBalancer lb) {
+		super.setLoadBalancer(lb);
+		if (lb instanceof BaseLoadBalancer) {
+			name = ((BaseLoadBalancer) lb).getName();
+		}
+		initialize(lb);
+	}
 
-            int serverCount = allList.size();
+	void initialize(ILoadBalancer lb) {
+		if (serverWeightTimer != null) {
+			serverWeightTimer.cancel();
+		}
+		serverWeightTimer = new Timer("NFLoadBalancer-serverWeightTimer-"
+				+ name, true);
+		serverWeightTimer.schedule(new DynamicServerWeightTask(), 0,
+				serverWeightTaskTimerInterval);
+		// do a initial run
+		ServerWeight sw = new ServerWeight();
+		sw.maintainWeights();
 
-            if (serverCount == 0) {
-                return null;
-            }
+		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+			public void run() {
+				logger.info("Stopping NFLoadBalancer-serverWeightTimer-{}", name);
+				serverWeightTimer.cancel();
+			}
+		}));
+	}
 
-            int serverIndex = 0;
+	public void shutdown() {
+		if (serverWeightTimer != null) {
+			logger.info("Stopping NFLoadBalancer-serverWeightTimer-{}", name);
+			serverWeightTimer.cancel();
+		}
+	}
 
-            // last one in the list is the sum of all weights
-            double maxTotalWeight = currentWeights.size() == 0 ? 0 : currentWeights.get(currentWeights.size() - 1); 
-            // No server has been hit yet and total weight is not initialized
-            // fallback to use round robin
-            if (maxTotalWeight < 0.001d) {
-                server =  super.choose(getLoadBalancer(), key); 
-            } else {
-                // generate a random weight between 0 (inclusive) to maxTotalWeight (exclusive)
-                double randomWeight = random.nextDouble() * maxTotalWeight;
-                // pick the server index based on the randomIndex
-                int n = 0;
-                for (Double d : currentWeights) {
-                    if (d >= randomWeight) {
-                        serverIndex = n;
-                        break;
-                    } else {
-                        n++;
-                    }
-                }
+	@edu.umd.cs.findbugs.annotations.SuppressWarnings(value = "RCN_REDUNDANT_NULLCHECK_OF_NULL_VALUE")
+	@Override
+	public Server choose(ILoadBalancer lb, Object key) {
+		if (lb == null) {
+			return null;
+		}
+		Server server = null;
 
-                server = allList.get(serverIndex);
-            }
+		while (server == null) {
+			// 因为是并发的，所以在找到合适的服务节点后，当前线程就可以退出寻找了
+			List<Double> currentWeights = accumulatedWeights;
+			if (Thread.interrupted()) {
+				return null;
+			}
+			List<Server> allList = lb.getAllServers();
 
-            if (server == null) {
-                /* Transient. */
-                Thread.yield();
-                continue;
-            }
+			int serverCount = allList.size();
 
-            if (server.isAlive()) {
-                return (server);
-            }
+			if (serverCount == 0) {
+				return null;
+			}
 
-            // Next.
-            server = null;
-        }
-        return server;
-    }
+			int serverIndex = 0;
 
-    class DynamicServerWeightTask extends TimerTask {
-        public void run() {
-            ServerWeight serverWeight = new ServerWeight();
-            try {
-                serverWeight.maintainWeights();
-            } catch (Exception e) {
-                logger.error("Error running DynamicServerWeightTask for {}", name, e);
-            }
-        }
-    }
+			// 由于刚才计算权重时是叠加的，所以列表中最后一个值是前面所有值+它本身的值
+			double maxTotalWeight = currentWeights.size() == 0 ? 0 : currentWeights.get(currentWeights.size() - 1);
+			// 如果所有服务器均没有命中，直接使用RoundRobin规则
+			if (maxTotalWeight < 0.001d) {
+				server = super.choose(getLoadBalancer(), key);
+			} else {
+				// 设定一个0到maxTotalWeight之间的一个随机值
+				double randomWeight = random.nextDouble() * maxTotalWeight;
+				int n = 0;
+				// 取一个值
+				for (Double d : currentWeights) {
+					if (d >= randomWeight) {
+						serverIndex = n;
+						break;
+					} else {
+						n++;
+					}
+				}
 
-    class ServerWeight {
+				server = allList.get(serverIndex);
+			}
+			// 判断服务实例是否存在
+			if (server == null) {
+				Thread.yield();
+				continue;
+			}
+			// 判断服务实例是否存活
+			if (server.isAlive()) {
+				return (server);
+			}
+			server = null;
+		}
+		return server;
+	}
 
-        public void maintainWeights() {
-            ILoadBalancer lb = getLoadBalancer();
-            if (lb == null) {
-                return;
-            }
-            
-            if (!serverWeightAssignmentInProgress.compareAndSet(false, true)) {
-                return;
-            }
-            
-            try {
-                logger.info("Weight adjusting job started");
-                AbstractLoadBalancer nlb = (AbstractLoadBalancer) lb;
-                LoadBalancerStats stats = nlb.getLoadBalancerStats();
-                if (stats == null) {
-                    // no statistics, nothing to do
-                    return;
-                }
-                double totalResponseTime = 0;
-                // find maximal 95% response time
-                for (Server server : nlb.getAllServers()) {
-                    // this will automatically load the stats if not in cache
-                    ServerStats ss = stats.getSingleServerStat(server);
-                    totalResponseTime += ss.getResponseTimeAvg();
-                }
-                // weight for each server is (sum of responseTime of all servers - responseTime)
-                // so that the longer the response time, the less the weight and the less likely to be chosen
-                Double weightSoFar = 0.0;
-                
-                // create new list and hot swap the reference
-                List<Double> finalWeights = new ArrayList<Double>();
-                for (Server server : nlb.getAllServers()) {
-                    ServerStats ss = stats.getSingleServerStat(server);
-                    double weight = totalResponseTime - ss.getResponseTimeAvg();
-                    weightSoFar += weight;
-                    finalWeights.add(weightSoFar);   
-                }
-                setWeights(finalWeights);
-            } catch (Exception e) {
-                logger.error("Error calculating server weights", e);
-            } finally {
-                serverWeightAssignmentInProgress.set(false);
-            }
+	class DynamicServerWeightTask extends TimerTask {
+		public void run() {
+			ServerWeight serverWeight = new ServerWeight();
+			try {
+				serverWeight.maintainWeights();
+			} catch (Exception e) {
+				logger.error("Error running DynamicServerWeightTask for {}", name, e);
+			}
+		}
+	}
 
-        }
-    }
+	class ServerWeight {
 
-    void setWeights(List<Double> weights) {
-        this.accumulatedWeights = weights;
-    }
-    
+		/**
+		 * 存储权重
+		 */
+		public void maintainWeights() {
+			ILoadBalancer lb = getLoadBalancer();
+			if (lb == null) {
+				return;
+			}
+
+			// 存在并发情况，加个🔐
+			if (!serverWeightAssignmentInProgress.compareAndSet(false, true)) {
+				return;
+			}
+
+			try {
+				logger.info("Weight adjusting job started");
+				// 获取ribbon核心组件
+				AbstractLoadBalancer nlb = (AbstractLoadBalancer) lb;
+				LoadBalancerStats stats = nlb.getLoadBalancerStats();
+				// 需要取每个服务实例的响应时间，如果没有负载均衡器状态，那么没有必要进行下去了
+				if (stats == null) {
+					return;
+				}
+				double totalResponseTime = 0;
+				for (Server server : nlb.getAllServers()) {
+					// 遍历每个节点，加和平均响应时间
+					ServerStats ss = stats.getSingleServerStat(server);
+					totalResponseTime += ss.getResponseTimeAvg();
+				}
+				// 权重计算公式是：集群的响应时间-总共响应时间，数字越小，权重越清
+				// 集群响应时间是遍历中的加和
+				Double weightSoFar = 0.0;
+
+				// 一次将权重叠加放入到列表中
+				List<Double> finalWeights = new ArrayList<Double>();
+				for (Server server : nlb.getAllServers()) {
+					ServerStats ss = stats.getSingleServerStat(server);
+					double weight = totalResponseTime - ss.getResponseTimeAvg();
+					weightSoFar += weight;
+					finalWeights.add(weightSoFar);
+				}
+				// 设置权重值
+				setWeights(finalWeights);
+			} catch (Exception e) {
+				logger.error("Error calculating server weights", e);
+			} finally {
+				// 权重设置开关关闭
+				serverWeightAssignmentInProgress.set(false);
+			}
+
+		}
+	}
+
+	void setWeights(List<Double> weights) {
+		this.accumulatedWeights = weights;
+	}
+
 	@Override
 	public void initWithNiwsConfig(IClientConfig clientConfig) {
-	    super.initWithNiwsConfig(clientConfig);
-	    serverWeightTaskTimerInterval = clientConfig.get(WEIGHT_TASK_TIMER_INTERVAL_CONFIG_KEY, DEFAULT_TIMER_INTERVAL);
+		super.initWithNiwsConfig(clientConfig);
+		serverWeightTaskTimerInterval = clientConfig.get(WEIGHT_TASK_TIMER_INTERVAL_CONFIG_KEY, DEFAULT_TIMER_INTERVAL);
 	}
 
 }

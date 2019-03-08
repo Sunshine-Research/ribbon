@@ -21,7 +21,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 
-
+/**
+ * 客户端异常
+ */
 public class ClientException extends Exception{
 	/**
 	 * 
