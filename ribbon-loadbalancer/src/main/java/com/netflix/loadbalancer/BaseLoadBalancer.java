@@ -57,8 +57,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class BaseLoadBalancer extends AbstractLoadBalancer implements
         PrimeConnections.PrimeConnectionListener, IClientConfigAware {
 
-    private static Logger logger = LoggerFactory
-            .getLogger(BaseLoadBalancer.class);
+    private static Logger logger = LoggerFactory.getLogger(BaseLoadBalancer.class);
+
     private final static IRule DEFAULT_RULE = new RoundRobinRule();
     private final static SerialPingStrategy DEFAULT_PING_STRATEGY = new SerialPingStrategy();
     private static final String DEFAULT_NAME = "default";
@@ -166,16 +166,9 @@ public class BaseLoadBalancer extends AbstractLoadBalancer implements
     
     void initWithConfig(IClientConfig clientConfig, IRule rule, IPing ping, LoadBalancerStats stats) {
         this.config = clientConfig;
-        String clientName = clientConfig.getClientName();
-        this.name = clientName;
-        int pingIntervalTime = Integer.parseInt(""
-                + clientConfig.getProperty(
-                        CommonClientConfigKey.NFLoadBalancerPingInterval,
-                        Integer.parseInt("30")));
-        int maxTotalPingTime = Integer.parseInt(""
-                + clientConfig.getProperty(
-                        CommonClientConfigKey.NFLoadBalancerMaxTotalPingTime,
-                        Integer.parseInt("2")));
+        this.name = clientConfig.getClientName();
+        int pingIntervalTime = clientConfig.get(CommonClientConfigKey.NFLoadBalancerPingInterval, 30);
+        int maxTotalPingTime = clientConfig.get(CommonClientConfigKey.NFLoadBalancerMaxTotalPingTime, 2);
 
         setPingInterval(pingIntervalTime);
         setMaxTotalPingTime(maxTotalPingTime);
@@ -232,9 +225,9 @@ public class BaseLoadBalancer extends AbstractLoadBalancer implements
         try {
             return (LoadBalancerStats) factory.create(loadBalancerStatsClassName, clientConfig);
         } catch (Exception e) {
-            logger.warn("Error initializing configured LoadBalancerStats class - " + String.valueOf(loadBalancerStatsClassName)
-                    + ". Falling-back to a new LoadBalancerStats instance instead.", e);
-            return new LoadBalancerStats(clientConfig.getClientName());
+            throw new RuntimeException(
+                    "Error initializing configured LoadBalancerStats class - " + loadBalancerStatsClassName,
+                    e);
         }
     }
 

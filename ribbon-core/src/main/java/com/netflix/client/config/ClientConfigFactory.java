@@ -37,13 +37,15 @@ public interface ClientConfigFactory {
 	 * 排序：优先级和类名
 	 * @return
 	 */
-	static ClientConfigFactory findDefaultConfigFactory() {
-		return StreamSupport.stream(ServiceLoader.load(ClientConfigFactory.class).spliterator(), false)
-				.max(Comparator
-						.comparingInt(ClientConfigFactory::getPriority)
-						.thenComparing(Comparator.comparing(f -> f.getClass().getCanonicalName())))
-				.orElseGet(() -> {
-					throw new IllegalStateException("Expecting at least one implementation of ClientConfigFactory discoverable via the ServiceLoader");
-				});
-	}
+    static ClientConfigFactory findDefaultConfigFactory() {
+        return StreamSupport.stream(ServiceLoader.load(ClientConfigFactory.class).spliterator(), false)
+                .sorted(Comparator
+                        .comparingInt(ClientConfigFactory::getPriority)
+                        .thenComparing(f -> f.getClass().getCanonicalName())
+                        .reversed())
+                .findFirst()
+                .orElseGet(() -> {
+                    throw new IllegalStateException("Expecting at least one implementation of ClientConfigFactory discoverable via the ServiceLoader");
+                });
+    }
 }

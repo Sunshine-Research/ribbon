@@ -18,6 +18,8 @@
 package com.netflix.client.config;
 
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.BiConsumer;
 
 /**
  * API使用的客户端的配置，用于实例化客户端或者负载均衡器
@@ -46,6 +48,14 @@ public interface IClientConfig {
 	Map<String, Object> getProperties();
 
     /**
+     * Iterate all properties and report the final value.  Can be null if a default value is not specified.
+     * @param consumer
+     */
+    default void forEach(BiConsumer<IClientConfigKey<?>, Object> consumer) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * @deprecated use {@link #set(IClientConfigKey, Object)} 
      */
 	@Deprecated
@@ -63,6 +73,10 @@ public interface IClientConfig {
     @Deprecated
 	Object getProperty(IClientConfigKey key, Object defaultVal);
 
+    /**
+     * @deprecated use {@link #getIfSet(IClientConfigKey)}
+     */
+    @Deprecated
 	boolean containsProperty(IClientConfigKey key);
 	
 	/**
@@ -70,11 +84,14 @@ public interface IClientConfig {
 	 * 返回客户端配置可用的VIP地址
 	 */
 	String resolveDeploymentContextbasedVipAddresses();
-	
+
+    @Deprecated
 	int getPropertyAsInteger(IClientConfigKey key, int defaultValue);
 
+    @Deprecated
     String getPropertyAsString(IClientConfigKey key, String defaultValue);
-    
+
+    @Deprecated
     boolean getPropertyAsBoolean(IClientConfigKey key, boolean defaultValue);
     
     /**
@@ -104,7 +121,36 @@ public interface IClientConfig {
      * <br><br>
      */
     default <T> T getOrDefault(IClientConfigKey<T> key) {
-        return get(key, key.getDefaultValue());
+        return get(key, key.defaultValue());
+    }
+
+    /**
+     * Return a typed property if and only if it was explicitly set, skipping configuration loading.
+     * @param key
+     * @param <T>
+     * @return
+     */
+    default <T> Optional<T> getIfSet(IClientConfigKey<T> key) {
+        return Optional.ofNullable(get(key));
+    }
+
+    /**
+     * @return Return a global dynamic property not scoped to the specific client.  The property will be looked up as is using the
+     * key without any client name or namespace prefix
+     */
+    <T> Property<T> getGlobalProperty(IClientConfigKey<T> key);
+
+    /**
+     * @return Return a dynamic property scoped to the client name or namespace.
+     */
+    <T> Property<T> getDynamicProperty(IClientConfigKey<T> key);
+
+    /**
+     * @return Return a dynamically updated property that is a mapping of all properties prefixed by the key name to an
+     * object with static method valueOf(Map{@literal <}String, String{@literal >})
+     */
+    default <T> Property<T> getPrefixMappedProperty(IClientConfigKey<T> key) {
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -116,7 +162,8 @@ public interface IClientConfig {
 	 * 设置配置属性值
      */
     <T> IClientConfig set(IClientConfigKey<T> key, T value);
-    
+
+    @Deprecated
     class Builder {
         
         private IClientConfig config;

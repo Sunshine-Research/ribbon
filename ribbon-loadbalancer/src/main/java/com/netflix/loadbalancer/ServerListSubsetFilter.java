@@ -15,19 +15,19 @@
  */
 package com.netflix.loadbalancer;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.netflix.client.IClientConfigAware;
 import com.netflix.client.config.CommonClientConfigKey;
 import com.netflix.client.config.IClientConfig;
-import com.netflix.config.DynamicFloatProperty;
-import com.netflix.config.DynamicIntProperty;
+import com.netflix.client.config.IClientConfigKey;
+import com.netflix.client.config.Property;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
 /**
  * 负载均衡的集群是整个集群的子集，在集群规模很大的时非常有用，可以最大化利用http连接池，避免所有的连接都在一个池子中
@@ -37,26 +37,41 @@ public class ServerListSubsetFilter<T extends Server> extends ZoneAffinityServer
 
     private Random random = new Random();
     private volatile Set<T> currentSubset = Sets.newHashSet(); 
-    private DynamicIntProperty sizeProp = new DynamicIntProperty(CommonClientConfigKey.DEFAULT_NAME_SPACE + ".ServerListSubsetFilter.size", 20);
-    private DynamicFloatProperty eliminationPercent = 
-            new DynamicFloatProperty(CommonClientConfigKey.DEFAULT_NAME_SPACE + ".ServerListSubsetFilter.forceEliminatePercent", 0.1f);
-    private DynamicIntProperty eliminationFailureCountThreshold = 
-            new DynamicIntProperty(CommonClientConfigKey.DEFAULT_NAME_SPACE + ".ServerListSubsetFilter.eliminationFailureThresold", 0);
-    private DynamicIntProperty eliminationConnectionCountThreshold = 
-            new DynamicIntProperty(CommonClientConfigKey.DEFAULT_NAME_SPACE + ".ServerListSubsetFilter.eliminationConnectionThresold", 0);
-    
+    private Property<Integer> sizeProp;
+    private Property<Float> eliminationPercent;
+    private Property<Integer> eliminationFailureCountThreshold;
+    private Property<Integer> eliminationConnectionCountThreshold;
+
+    private static final IClientConfigKey<Integer> SIZE = new CommonClientConfigKey<Integer>("ServerListSubsetFilter.size", 20) {};
+    private static final IClientConfigKey<Float> FORCE_ELIMINATE_PERCENT = new CommonClientConfigKey<Float>("ServerListSubsetFilter.forceEliminatePercent", 0.1f) {};
+    private static final IClientConfigKey<Integer> ELIMINATION_FAILURE_THRESHOLD = new CommonClientConfigKey<Integer>("ServerListSubsetFilter.eliminationFailureThresold", 0) {};
+    private static final IClientConfigKey<Integer> ELIMINATION_CONNECTION_THRESHOLD = new CommonClientConfigKey<Integer>("ServerListSubsetFilter.eliminationConnectionThresold", 0) {};
+
+    /**
+     * @deprecated ServerListSubsetFilter should only be created with an IClientConfig.  See {@link ServerListSubsetFilter#ServerListSubsetFilter(IClientConfig)}
+     */
+    @Deprecated
+    public ServerListSubsetFilter() {
+        sizeProp = Property.of(SIZE.defaultValue());
+        eliminationPercent = Property.of(FORCE_ELIMINATE_PERCENT.defaultValue());
+        eliminationFailureCountThreshold = Property.of(ELIMINATION_FAILURE_THRESHOLD.defaultValue());
+        eliminationConnectionCountThreshold = Property.of(ELIMINATION_CONNECTION_THRESHOLD.defaultValue());
+    }
+
+    public ServerListSubsetFilter(IClientConfig clientConfig) {
+        super(clientConfig);
+
+        initWithNiwsConfig(clientConfig);
+    }
+
     @Override
     public void initWithNiwsConfig(IClientConfig clientConfig) {
-        super.initWithNiwsConfig(clientConfig);
-        sizeProp = new DynamicIntProperty(clientConfig.getClientName() + "." + clientConfig.getNameSpace() + ".ServerListSubsetFilter.size", 20);
-        eliminationPercent = 
-                new DynamicFloatProperty(clientConfig.getClientName() + "." + clientConfig.getNameSpace() + ".ServerListSubsetFilter.forceEliminatePercent", 0.1f);
-        eliminationFailureCountThreshold = new DynamicIntProperty( clientConfig.getClientName()  + "." + clientConfig.getNameSpace()
-                + ".ServerListSubsetFilter.eliminationFailureThresold", 0);
-        eliminationConnectionCountThreshold = new DynamicIntProperty(clientConfig.getClientName() + "." + clientConfig.getNameSpace()
-                + ".ServerListSubsetFilter.eliminationConnectionThresold", 0);
+        sizeProp = clientConfig.getDynamicProperty(SIZE);
+        eliminationPercent = clientConfig.getDynamicProperty(FORCE_ELIMINATE_PERCENT);
+        eliminationFailureCountThreshold = clientConfig.getDynamicProperty(ELIMINATION_FAILURE_THRESHOLD);
+        eliminationConnectionCountThreshold = clientConfig.getDynamicProperty(ELIMINATION_CONNECTION_THRESHOLD);
     }
-        
+
     /**
      * Given all the servers, keep only a stable subset of servers to use. This method
      * keeps the current list of subset in use and keep returning the same list, with exceptions
@@ -95,21 +110,20 @@ public class ServerListSubsetFilter<T extends Server> extends ZoneAffinityServer
             	// 从负载均衡器状态中获取当前服务器的状态
                 ServerStats stats = lbStats.getSingleServerStat(server);
 				// 去除不满足服务状态的服务集群
-                if (stats.getActiveRequestsCount() > eliminationConnectionCountThreshold.get()
-                        || stats.getFailureCount() > eliminationFailureCountThreshold.get()) {
+                if (stats.getActiveRequestsCount() > eliminationConnectionCountThreshold.getOrDefault()
+                        || stats.getFailureCount() > eliminationFailureCountThreshold.getOrDefault()) {
                     newSubSet.remove(server);
                     // 分区列表同时也删除对应的服务器
                     candidates.remove(server);
                 }
             }
         }
-        // 子集群的大小
-        int targetedListSize = sizeProp.get();
-        // 看看摘除掉了多少个集群
+		// 子集群的大小
+        int targetedListSize = sizeProp.getOrDefault();
+		// 看看摘除掉了多少个集群
         int numEliminated = currentSubset.size() - newSubSet.size();
-        // 算一个最小摘除数
-        int minElimination = (int) (targetedListSize * eliminationPercent.get());
-        // 计算需要摘除的服务器数量
+		// 算一个最小摘除数
+        int minElimination = (int) (targetedListSize * eliminationPercent.getOrDefault());
         int numToForceEliminate = 0;
         if (targetedListSize < newSubSet.size()) {
             numToForceEliminate = newSubSet.size() - targetedListSize;

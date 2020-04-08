@@ -39,7 +39,6 @@ public class ZoneAvoidanceRule extends PredicateBasedRule {
     private CompositePredicate compositePredicate;
     
     public ZoneAvoidanceRule() {
-        super();
         ZoneAvoidancePredicate zonePredicate = new ZoneAvoidancePredicate(this);
         AvailabilityPredicate availabilityPredicate = new AvailabilityPredicate(this);
         compositePredicate = createCompositePredicate(zonePredicate, availabilityPredicate);
@@ -50,10 +49,8 @@ public class ZoneAvoidanceRule extends PredicateBasedRule {
                              .addFallbackPredicate(p2)
                              .addFallbackPredicate(AbstractServerPredicate.alwaysTrue())
                              .build();
-        
     }
-    
-    
+
     @Override
     public void initWithNiwsConfig(IClientConfig clientConfig) {
         ZoneAvoidancePredicate zonePredicate = new ZoneAvoidancePredicate(this, clientConfig);
